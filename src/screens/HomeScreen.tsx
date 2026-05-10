@@ -164,7 +164,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     return null;
   };
 
-  const categories = ['Electronics', 'Beauty', 'Home', 'Fashion', 'Sports', 'Toys'];
+  const handleCategoryPress = (cat: string) => {
+    setDebouncedQuery(cat);
+    dispatch(setSearchQuery(cat));
+    dispatch(resetProducts());
+    dispatch(fetchProducts({ skip: 0, limit, query: cat, refresh: true }));
+  };
+
+  const categories = ['Beauty', 'Fragrances', 'Furniture', 'Groceries', 'Laptops', 'Smartphones'];
 
   const renderHeader = () => (
     <View style={styles.listHeader}>
@@ -172,7 +179,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroll}>
             {categories.map((cat, index) => (
-              <TouchableOpacity key={index.toString()} style={styles.categoryChip}>
+              <TouchableOpacity 
+                key={index.toString()} 
+                style={styles.categoryChip}
+                onPress={() => handleCategoryPress(cat)}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.categoryText}>{cat}</Text>
               </TouchableOpacity>
             ))}
