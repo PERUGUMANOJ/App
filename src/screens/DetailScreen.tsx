@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Dimensions,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { Product } from '../types';
 
@@ -21,6 +22,25 @@ const { width } = Dimensions.get('window');
 const DetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { product } = route.params;
 
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 40,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.appBar}>
@@ -29,7 +49,11 @@ const DetailScreen: React.FC<Props> = ({ route, navigation }) => {
         </TouchableOpacity>
         <Text style={styles.appBarTitle} numberOfLines={1}>{product.title}</Text>
       </View>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+
+      <Animated.ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
+      >
         {/* Main Image */}
         <View style={styles.imageContainer}>
           <Image
@@ -84,10 +108,10 @@ const DetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Bottom Action Bar */}
-      <View style={styles.bottomBar}>
+      <Animated.View style={[styles.bottomBar, { opacity: fadeAnim }]}>
         <View style={styles.bottomPriceContainer}>
           <Text style={styles.bottomPriceLabel}>Total Price</Text>
           <Text style={styles.bottomPrice}>${product.price.toFixed(2)}</Text>
@@ -95,7 +119,7 @@ const DetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <TouchableOpacity style={styles.addToCartBtn} activeOpacity={0.8}>
           <Text style={styles.addToCartText}>Add to Cart</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   AppStateStatus,
   ScrollView,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
@@ -26,6 +27,58 @@ interface Props {
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width / 2 - 24;
+
+const AnimatedCard = ({ item, index, onPress }: { item: Product, index: number, onPress: () => void }) => {
+  const translateY = useRef(new Animated.Value(50)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 400,
+        delay: index * 100 > 1000 ? 100 : index * 100, // stagger first 10 items
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        delay: index * 100 > 1000 ? 100 : index * 100,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View style={[styles.card, { opacity, transform: [{ translateY }] }]}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
+        <View style={styles.imageWrapper}>
+          <Image
+            source={{ uri: item.thumbnail }}
+            style={styles.thumbnail}
+            resizeMode="cover"
+          />
+          {item.discountPercentage > 0 && (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>-{Math.round(item.discountPercentage)}%</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.cardInfo}>
+          <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
+          <Text style={styles.brand} numberOfLines={1}>{item.brand || item.category}</Text>
+          <View style={styles.priceRow}>
+            <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+            <View style={styles.ratingBadge}>
+              <Text style={styles.ratingText}>★ {item.rating.toFixed(1)}</Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -72,6 +125,15 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const loadMore = () => {
     if (status !== 'loading' && items.length < total) {
       dispatch(fetchProducts({ skip: skip + limit, limit, query: searchQuery, refresh: false }));
+    }
+  };
+
+  const handleHomePress = () => {
+    if (searchQuery || debouncedQuery) {
+      setDebouncedQuery('');
+      dispatch(setSearchQuery(''));
+      dispatch(resetProducts());
+      dispatch(fetchProducts({ skip: 0, limit, query: '', refresh: true }));
     }
   };
 
@@ -129,7 +191,9 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.appTitle}>FreshShop</Text>
+        <TouchableOpacity onPress={handleHomePress} activeOpacity={0.7}>
+          <Text style={styles.appTitle}>FreshShop</Text>
+        </TouchableOpacity>
         <TextInput
           style={styles.searchInput}
           placeholder="Search items, brands, categories..."
@@ -153,37 +217,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         ListHeaderComponent={renderHeader}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmpty}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('Detail', { product: item })}
-            activeOpacity={0.9}
-          >
-            <View style={styles.imageWrapper}>
-              <Image
-                source={{ uri: item.thumbnail }}
-                style={styles.thumbnail}
-                resizeMode="cover"
-              />
-              {item.discountPercentage > 0 && (
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>-{Math.round(item.discountPercentage)}%</Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.cardInfo}>
-              <Text style={styles.title} numberOfLines={2}>
-                {item.title}
-              </Text>
-              <Text style={styles.brand} numberOfLines={1}>{item.brand || item.category}</Text>
-              <View style={styles.priceRow}>
-                <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-                <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingText}>★ {item.rating.toFixed(1)}</Text>
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
+        renderItem={({ item, index }) => (
+          <AnimatedCard 
+            item={item} 
+            index={index} 
+            onPress={() => navigation.navigate('Detail', { product: item })} 
+          />
         )}
       />
     </SafeAreaView>
