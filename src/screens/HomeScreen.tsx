@@ -29,22 +29,22 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = width / 2 - 24;
 
 const AnimatedCard = ({ item, index, onPress }: { item: Product, index: number, onPress: () => void }) => {
-  const translateY = useRef(new Animated.Value(50)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 400,
-        delay: index * 100 > 1000 ? 100 : index * 100, // stagger first 10 items
+        duration: 300,
+        delay: Math.min(index * 50, 500),
         useNativeDriver: true,
       }),
       Animated.spring(translateY, {
         toValue: 0,
         tension: 50,
         friction: 7,
-        delay: index * 100 > 1000 ? 100 : index * 100,
+        delay: Math.min(index * 50, 500),
         useNativeDriver: true,
       })
     ]).start();
@@ -129,12 +129,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleHomePress = () => {
-    if (searchQuery || debouncedQuery) {
-      setDebouncedQuery('');
-      dispatch(setSearchQuery(''));
-      dispatch(resetProducts());
-      dispatch(fetchProducts({ skip: 0, limit, query: '', refresh: true }));
-    }
+    setDebouncedQuery('');
+    dispatch(setSearchQuery(''));
+    dispatch(resetProducts());
+    dispatch(fetchProducts({ skip: 0, limit, query: '', refresh: true }));
   };
 
   const renderFooter = () => {
