@@ -1,40 +1,43 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, Platform, StatusBar } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
 import DetailScreen from '../screens/DetailScreen';
-import { RootStackParamList } from './types';
+import { Product } from '../types';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+export type Route = { name: 'Home' } | { name: 'Detail'; product: Product };
 
 const AppNavigator = () => {
+  const [routeStack, setRouteStack] = useState<Route[]>([{ name: 'Home' }]);
+
+  const navigate = useCallback((routeName: 'Detail', params: { product: Product }) => {
+    setRouteStack((prev) => [...prev, { name: routeName, ...params }]);
+  }, []);
+
+  const goBack = useCallback(() => {
+    setRouteStack((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev));
+  }, []);
+
+  const currentRoute = routeStack[routeStack.length - 1];
+
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Home"
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#fff',
-          },
-          headerTintColor: '#333',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }}
-      >
-        <Stack.Screen 
-          name="Home" 
-          component={HomeScreen} 
-          options={{ title: 'Products' }} 
-        />
-        <Stack.Screen 
-          name="Detail" 
-          component={DetailScreen} 
-          options={({ route }) => ({ title: route.params.product.title })} 
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      {currentRoute.name === 'Home' && (
+        <HomeScreen navigation={{ navigate }} />
+      )}
+      {currentRoute.name === 'Detail' && (
+        <DetailScreen route={{ params: { product: currentRoute.product } }} navigation={{ goBack }} />
+      )}
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+});
 
 export default AppNavigator;

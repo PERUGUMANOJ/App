@@ -7,49 +7,59 @@ import {
   ScrollView,
   SafeAreaView,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { Product } from '../types';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Detail'>;
+interface Props {
+  route: { params: { product: Product } };
+  navigation: { goBack: () => void };
+}
 
 const { width } = Dimensions.get('window');
 
-const DetailScreen: React.FC<Props> = ({ route }) => {
+const DetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { product } = route.params;
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.appBar}>
+        <TouchableOpacity onPress={navigation.goBack} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.appBarTitle} numberOfLines={1}>{product.title}</Text>
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Main Image */}
-        <Image
-          source={{ uri: product.thumbnail }}
-          style={styles.mainImage}
-          resizeMode="cover"
-        />
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: product.thumbnail }}
+            style={styles.mainImage}
+            resizeMode="cover"
+          />
+          {product.discountPercentage > 0 && (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>-{Math.round(product.discountPercentage)}%</Text>
+            </View>
+          )}
+        </View>
 
         <View style={styles.detailsContainer}>
           <View style={styles.headerRow}>
             <Text style={styles.brand}>{product.brand || product.category}</Text>
             <View style={styles.ratingBadge}>
-              <Text style={styles.ratingText}>★ {product.rating}</Text>
+              <Text style={styles.ratingText}>★ {product.rating.toFixed(1)}</Text>
             </View>
           </View>
 
           <Text style={styles.title}>{product.title}</Text>
 
           <View style={styles.priceRow}>
-            <Text style={styles.price}>${product.price}</Text>
-            {product.discountPercentage > 0 && (
-              <Text style={styles.discount}>
-                {product.discountPercentage}% OFF
-              </Text>
-            )}
+            <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+            <Text style={styles.stockStatus}>
+              {product.stock > 0 ? `In Stock (${product.stock})` : 'Out of Stock'}
+            </Text>
           </View>
-
-          <Text style={styles.stockStatus}>
-            {product.stock > 0 ? `In Stock (${product.stock})` : 'Out of Stock'}
-          </Text>
 
           <View style={styles.divider} />
 
@@ -75,6 +85,17 @@ const DetailScreen: React.FC<Props> = ({ route }) => {
           )}
         </View>
       </ScrollView>
+
+      {/* Bottom Action Bar */}
+      <View style={styles.bottomBar}>
+        <View style={styles.bottomPriceContainer}>
+          <Text style={styles.bottomPriceLabel}>Total Price</Text>
+          <Text style={styles.bottomPrice}>${product.price.toFixed(2)}</Text>
+        </View>
+        <TouchableOpacity style={styles.addToCartBtn} activeOpacity={0.8}>
+          <Text style={styles.addToCartText}>Add to Cart</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -85,12 +106,56 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 20,
+  },
+  appBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  backButton: {
+    marginRight: 16,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#e91e63',
+    fontWeight: '600',
+  },
+  appBarTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    flex: 1,
+    color: '#333',
+  },
+  imageContainer: {
+    position: 'relative',
   },
   mainImage: {
     width: width,
     height: width * 0.8,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#f8f9fa',
+  },
+  discountBadge: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    backgroundColor: '#e91e63',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  discountText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   detailsContainer: {
     padding: 16,
@@ -103,74 +168,111 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontSize: 14,
-    color: '#666',
+    color: '#868e96',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    fontWeight: '600',
   },
   ratingBadge: {
-    backgroundColor: '#fff8e1',
+    backgroundColor: '#fff3cd',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 6,
   },
   ratingText: {
-    color: '#f57c00',
+    color: '#f59f00',
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 14,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111',
+    fontWeight: '800',
+    color: '#212529',
     marginBottom: 12,
+    lineHeight: 32,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
   price: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#2e7d32',
-    marginRight: 12,
-  },
-  discount: {
-    fontSize: 14,
-    color: '#d32f2f',
-    backgroundColor: '#ffebee',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    overflow: 'hidden',
+    color: '#2b8a3e',
   },
   stockStatus: {
     fontSize: 14,
-    color: '#555',
-    marginBottom: 16,
+    color: '#495057',
+    fontWeight: '500',
   },
   divider: {
     height: 1,
-    backgroundColor: '#eee',
-    marginVertical: 16,
+    backgroundColor: '#f1f3f5',
+    marginVertical: 20,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    fontWeight: '700',
+    color: '#343a40',
+    marginBottom: 12,
   },
   description: {
     fontSize: 15,
     lineHeight: 24,
-    color: '#444',
+    color: '#495057',
   },
   galleryImage: {
     width: 120,
     height: 120,
-    borderRadius: 8,
+    borderRadius: 12,
     marginRight: 12,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f8f9fa',
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    padding: 16,
+    paddingBottom: 24,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  bottomPriceContainer: {
+    flex: 1,
+  },
+  bottomPriceLabel: {
+    fontSize: 12,
+    color: '#868e96',
+    fontWeight: '600',
+  },
+  bottomPrice: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#2b8a3e',
+  },
+  addToCartBtn: {
+    backgroundColor: '#e91e63',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#e91e63',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  addToCartText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
